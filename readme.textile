@@ -1,4 +1,4 @@
-h1. FuncTool
+h1. FuncTools
 
 h2. Overview
 
