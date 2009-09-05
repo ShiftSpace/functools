@@ -1,3 +1,8 @@
+// ==Builder==
+// @required
+// @package           FuncTools
+// ==/Builder==
+
 function $identity(v) { return v; }
 
 function $callable(v) { return v && $type(v) == 'function'; }
