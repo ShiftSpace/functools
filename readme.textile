@@ -1,0 +1,38 @@
+h1. FuncsTool
+
+h2. Overview
+
+FuncTools is a small library of functional programming tools for MooTools. Some highlights follow.
+
+h2. $arity
+
+Sometimes you want to define a single function that dispatches on arity, for example say you want to sum a range of numbers. You could loop over the array with an accumulator, but it's much more fun to use reduce.
+
+<pre>
+var add = function(a, b) { return a + b; }
+var sum = $arity(
+  function(a) { return a; },
+  function(a, b) { return a + (($type(b) == 'array') ? b.first() || 0 : b); }
+);
+$reduce(sum, $range(100));
+</pre>
+
+h2. Function.comp & Function.partial
+
+It's very useful to able to compose functions or to curry a function.
+
+<pre>
+var newfn = Function.comp(fnA, fnB, fnC, fnD);
+var partialFn = function(a, b) { return a * b }.partial(null, 3);
+</pre>
+
+h2. Function.decorate
+
+Function decoration is also a very powerful technique. The "Promises":http://github.com/ShiftSpace/promises/tree/master uses this to great effect. We can memoize results for example. You would not want to run the following calculation without memoization:
+
+<pre>
+var fib = function (n) {
+  return n < 2 ? n : fib(n-1) + fib(n-2);
+}.decorate(memoize);
+fib(100);
+</pre>
