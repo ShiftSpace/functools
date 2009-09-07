@@ -182,6 +182,12 @@ Array.implement({
       ary = ary.tail(n);
     }
     return result;
+  },
+  asFn: function() {
+    var self = this;
+    return function (idx) {
+      return self[idx];
+    }
   }
 });
 
