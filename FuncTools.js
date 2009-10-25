@@ -297,6 +297,7 @@ function $acc() {
     <curry>
 */
 var _ = {};
+(function() {
 function argmerge(a, b) {
   var result = [];
   for(var i = 0, len = Math.max(a.length, b.length); i < len; i++) {
@@ -304,7 +305,6 @@ function argmerge(a, b) {
   }
   return result;
 };
-(function() {
 Function.implement({
   /*
     Function: Function.decorate
@@ -668,7 +668,6 @@ Hash.implement({
     return (clean) ? result : $H(result);
   }
 })
-
 
 /*
   Function: $msg
