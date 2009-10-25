@@ -1,24 +1,129 @@
+/*
+  Function: $identity
+    A function that simply returns the value given to it.
+    
+  Parameters:
+    v - a value.
+    
+  Returns:
+    The passed in value.
+    
+  (start code)
+  $identity(5); // returns 5
+  (end)
+*/
 function $identity(v) { return v; };
 
+/*
+  Function: $eq
+    For testing equality when composing functions. Return
+    a function which tests equality against the passed
+    in value.
+    
+  Parameters:
+    a - a value.
+    
+  Return:
+    boolean.
+    
+  (start code)
+  var fn = $eq(5);
+  [1, 2, 3, 4, 5].some($eq(5)); // true
+  (end)
+*/
 function $eq(a) { return function(b) { return a == b; }};
 
+/*
+  Function: $callable
+    Check whether a value is non-null and a function.
+    
+  Paramters:
+    v - a value.
+    
+  Returns:
+    A function which returns boolean.
+*/
 function $callable(v) { return v && $type(v) == 'function'; }
 
+/*
+  Function: $not
+    Returns the complement of a function. Useful when composing
+    functions.
+    
+  Parameters:
+    fn - a function.
+    
+  Returns:
+    A function which return a boolean value.
+*/
 function $not(fn) {
   return function() {
     return !fn.apply(this, $A(arguments));
   }
 };
 
+/*
+  Function: $range
+    Returns a array of integer values.
+  
+  Parameters:
+    a - an integer value.
+    b - an integer, must be greater than a.
+  
+  Returns:
+    An array.
+    
+  (start code)
+  $range(1, 10) // [1, 2, 3, 4, 5, 6, 7, 8, 9]
+  (end)
+*/
 function $range(a, b) {
   var start = (b && a) || 0, end = b || a;
   return $repeat(end-start, function() { return start++; });
 };
 
+/*
+  Function: $isnull
+    Function for checking whether a value is null. Useful
+    in function composition.
+    
+  Parameters:
+    v - a value.
+    
+  Returns:
+    boolean.
+*/
 function $isnull(v) { return v === null; };
 
+/*
+  Function: $notnull
+    Complement to $isnull
+    
+  Parameters:
+    v - a value.
+    
+  Returns:
+    boolean.
+*/
 function $notnull(v) { return v !== null; };
 
+/*
+  Function: $iterate
+    Repeats a function generating an array of values
+    from calling this function n times.
+  
+  Parameters:
+    n - an integer.
+    fn - a function.
+  
+  Returns:
+    An array.
+    
+  (start code)
+  var ints = (function() { var n = 0; return function() { return n++; }})();
+  $iterate(10, ints); // [1, 2, 3, 4, 5, 6, 7, 8, 9]
+  (end)
+*/
 function $iterate(n, fn) {
   var result = [];
   (n).times(function() {
@@ -27,14 +132,69 @@ function $iterate(n, fn) {
   return result;
 };
 
+/*
+  Function: $repeat
+    Used to repeat a value. Returns an array of the value repeated
+    n times.
+  
+  Parameters:
+    n - a integer.
+    v - a value.
+    
+  Returns:
+    An array.
+    
+  (start code)
+  $repeat(10, 'x'); // ["x", "x", "x", "x", "x", "x", "x", "x", "x", "x"]
+  (end)
+*/
 function $repeat(n, v) {
   return $iterate(n, $lambda(v));
 };
 
+/*
+  Function: $arglist
+    Get the arglist of a function. Return an array of
+    the names of function's parameters.
+  
+  Parameters:
+    fn - a function.
+    
+  Returns:
+    An array of strings.
+    
+  See Also:
+    $arity
+    
+  (start code)
+  function add(a, b, c) { return a + b + c; };
+  $arglist(add) // ["a", " b", " c"]
+  (end)
+*/
 function $arglist(fn) {
   return fn._arglist || fn.toString().match(/function \S*\((.*?)\)/)[1].split(',');
 };
 
+/*
+  Function: $arity
+    Support for function dispatch on arity.
+    
+  Parameters:
+    This function takes any number of functions as it's parameters.
+    Each function should take a unique number of parameters.
+    
+  See Also:
+    $reduce
+    
+  (start code)
+  var sum = $arity(
+    function(a) { return a; },
+    function(a, b) { return a + b }
+  );
+  sum(5); // 5
+  sum(5, 10); // 15
+  (end)
+*/
 function $arity() {
   var fns = $A(arguments);
   var dispatch = [];
@@ -48,10 +208,30 @@ function $arity() {
   }
 };
 
+/*
+  Function: $reduce
+    Uses a function to reduce a list of values to a single value.
+  
+  Parameters:
+    fn - a function.
+    ary - an array.
+  
+  Returns:
+    A value.
+    
+  (start code)
+  var ary = $repeat(10, 1);
+  var add = $arity(
+    function(a) { return a; },
+    function(a, b) { return a + b.first(); }
+  );
+  var sum = $reduce(add, ary);
+  (end)
+*/
 function $reduce(fn, ary) {
   ary = $A(ary);
   var result = ary.first();
-  while(ary.length != 0) {
+  while(ary.rest().length != 0) {
     var rest = ary.rest();
     result = fn(result, rest);
     ary = rest;
