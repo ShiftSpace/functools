@@ -221,11 +221,11 @@ function $arity() {
     
   (start code)
   var ary = $repeat(10, 1);
-  var add = $arity(
+  var sum = $arity(
     function(a) { return a; },
     function(a, b) { return a + b.first(); }
   );
-  var sum = $reduce(add, ary);
+  var total = $reduce(sum, ary);
   (end)
 */
 function $reduce(fn, ary) {
@@ -239,6 +239,25 @@ function $reduce(fn, ary) {
   return result;
 };
 
+/*
+  Function: $get
+    Get the value from an object. Allows avoiding annoying
+    if statements of the form if(object && object.foo && object.bar) fn(object.foo.bar);
+    If any of the properties are undefined/null returns right away.
+    
+  Parameters:
+    The first parameters is an object, the following parameters are the properties
+    you want to access.
+    
+  Returns:
+    A value.
+    
+  (start code)
+  var obj = {"foo": {"bar": {"baz":42}}};
+  $get(obj, "foo", "bar", "baz"); // 42
+  $get(obj, "foo", "baj", "baz"); // null
+  (end)
+*/
 function $get(first, prop) {
   var args = $A(arguments), rest = args.rest(2), next;
   if(rest.length == 0) return first[prop];
@@ -247,6 +266,22 @@ function $get(first, prop) {
   return (next == null) ? null : $get.apply(null, [next].concat(rest));
 };
 
+/*
+  Function: $acc
+    Returns a function that applies $get an object. Useful
+    in function composition.
+    
+  Parameters:
+    A variable list of properties you wish to access in an object.
+    
+  Returns:
+    A value.
+    
+  (start code)
+  var objects = $repeat(5, {"foo":{"bar":{"baz":42}}});
+  objects.map($acc("foo", "bar", "baz")); // [42, 42, 42, 42, 42]
+  (end)
+*/
 function $acc() {
   var args = $A(arguments);
   return function(obj) {
@@ -254,14 +289,41 @@ function $acc() {
   };
 };
 
-var $_ = {};
-(function() {
+/*
+  Constant: _
+    To denote a value to be filled in curried function.
+  
+  See Also:
+    <curry>
+*/
+var _ = {};
 function argmerge(a, b) {
   var result = [];
-  for(var i = 0, len = a.length; i < len; i++) result[i] = (b[i] == $_) ? a[i] : b[i];
+  for(var i = 0, len = Math.max(a.length, b.length); i < len; i++) {
+    result[i] = (b[i] == _) ? a[i] || _ : (b[i] !== undefined && b[i]) || a[i];
+  }
   return result;
 };
+(function() {
 Function.implement({
+  /*
+    Function: Function.decorate
+      Decorate a function. Takes a list of decorators and applies
+      them to the function.
+      
+    Parameters:
+      A variable list of functions.
+      
+    Returns:
+      The decorated function.
+      
+    (start code)
+    var fib = function (n) {
+      return n < 2 ? n : fib(n-1) + fib(n-2);
+    }.decorate(memoize);
+    fib(100);
+    (end)
+  */
   decorate: function() {
     var decorators = $A(arguments), orig = resultFn = this, decorator;
     while(decorator = decorators.pop()) resultFn = decorator(resultFn);
@@ -270,6 +332,21 @@ Function.implement({
     return resultFn;
   },
 
+  /*
+    Function: Function.comp
+      Compose any number of functions.
+      
+    Parameters:
+      A variable list of functions.
+      
+    Returns:
+      A function.
+      
+    (start code)
+    var objects = $repeat(5, {"foo":{"bar":{"baz":42}}});
+    objects.map(Function.comp($acc("foo", "bar", "baz"), $eq(42))); // [true, true, true, true, true]
+    (end)
+  */
   comp: function() {
     var fns = $A(arguments), self = this;
     return function() {
@@ -280,6 +357,24 @@ Function.implement({
     }
   },
   
+  /*
+    Function: Function.partial
+      A simple form of currying. Takes a function and you can bind
+      in order the arguments to a function.
+      
+    Parameters:
+      Take a variable list of arguments. The first is the bind
+      parameter.
+    
+    Returns:
+      A function.
+      
+    (start code)
+    function abc(a, b, c) { return a + b + c; };
+    var partial = abc.partial(null, 1, 2);
+    partial(3) // 6
+    (end)
+  */
   partial: function(bind) {
     var self = this;
     args = $A(arguments).rest();
@@ -288,21 +383,59 @@ Function.implement({
     };
   },
   
+  /*
+    Function: Function.curry
+      A much more powerful version of currying. Any argument may
+      supplied.
+      
+    (start code)
+    function abc(a, b, c) { return a + b + c; };
+    var curried = abc.curry(null, _, _, 3);
+    curried = curried(1);
+    curried(_, 2); // 6
+    (end)
+  */
   curry: function(bind) {
     var self = this, arglist = $arglist(this), args = $A(arguments).rest();
+    args = argmerge($repeat(arglist.length, _), args);
     return function() {
       var fargs = argmerge(args, $A(arguments));
-      if(fargs.length == arglist.length && fargs.every($not($eq($_)))) {
+      if(fargs.length == arglist.length && fargs.every($not($eq(_)))) {
         return self.apply(bind, fargs);
       } else {
-        return self.curry(bind, fargs);
+        return self.curry.apply(self, [bind].extend(fargs));
       }
     };
   }
 });
 })();
+/*
+  Function: $comp
+    Shorthand for Function.comp
+    
+  See Also:
+    <Function.comp>
+*/
 var $comp = Function.comp;
 
+/*
+  Function: memoize
+    A memoize decorator. Creates a hash of seen arguments and the
+    return values.
+    
+  Parameters:
+    fn - a function.
+    
+  Returns:
+    A function.
+    
+  (start code)
+  var fib = function (n) {
+    return n < 2 ? n : fib(n-1) + fib(n-2);
+  }.decorate(memoize);
+  fib(100);
+  (end)
+*/
 function memoize(fn) {
   var table = {};
   return function memoized() {
@@ -318,15 +451,36 @@ function memoize(fn) {
   };
 }
 
+/*
+  Function: pre
+    A decorator for support pre-conditions for a function. A predicate
+    can be supplied for each argument.
+    
+  Parameters:
+    conditions - an array of predicate functions.
+    error - a boolean or function. If boolean will throw an exception
+      on a failed predicate. If a function will call it as an error
+      handler with the array containing the list of passed and failed
+      predicates.
+  
+  Returns:
+    A function.
+    
+  (start code)
+  var isEven = function(n) { return n % 2 == 0; };
+  var isOdd = $not(isEven);
+  var add = function(a, b) { return a + b; }.decorate(pre([isEven, isOdd], true));
+  add(2, 3); // 5
+  add(2, 2); // throws exception
+  (code)
+*/
 function pre(conditions, error) {
   error = error || false;
   return function preDecorator(fn) {
     return function() {
       var args = $A(arguments);
-      var i = 0;
-      var passed = conditions.map(function(afn) {
+      var passed = conditions.map(function(afn, i) {
         var result = afn(args[i]);
-        i++;
         return result;
       });
       if(passed.indexOf(false) == -1) {
@@ -335,7 +489,7 @@ function pre(conditions, error) {
         if($type(error) == 'boolean' && error) {
           var err = new Error("Arguments did not match pre conditions.");
           err.args = args;
-          err.conditions = conditions;
+          err.passed = passed;
           err.source = fn.toString();
           throw err;
         } else if($type(error) == 'function') {
@@ -364,11 +518,78 @@ Class.extend({
 });
 
 Array.implement({
+  /*
+    Function: Array.first
+      Returns the first item.
+  */
   first: function() { return this[0]; },
+  
+  /*
+    Function: Array.rest
+      Returns everything but the first item. If the
+      Array is empty returns the array.
+      
+    Parameters:
+      n - integer, the start index.
+      
+    Returns:
+      An array.
+  */
   rest: function(n) { return this.slice(n || 1, this.length); },
-  drop: function(n) { return this.slice(0, this.length-n); },
-  tail: function(n) { return this.slice(n, this.length); },
-  head: function(n) { return this.slice(0, n) },
+  
+  /*
+    Function: Array.drop
+      Drop n items from the end of an array. Defaults to dropping 1 item.
+    
+    Parameters:
+      n - integer, the number of items to drop.
+      
+    Returns:
+      An array.
+  */
+  drop: function(n) { return this.slice(0, this.length-(n || 1)); },
+  
+  /*
+    Function: Array.tail
+      Returns the tail of the array. If no n specified returns the
+      whole array.
+      
+    Parameters:
+      n - integer.
+      
+    Returns:
+      An array.
+  */
+  tail: function(n) { return this.slice((n || 0), this.length); },
+  
+  /*
+    Function: Array.head
+      Returns the head of the array. If no n specified returns the
+      whole array.
+      
+    Parameters:
+      n - an integer.
+      
+    Returns:
+      An array.
+  */
+  head: function(n) { return this.slice(0, (n || this.length)) },
+  
+  /*
+    Function: Array.partition
+      Partition an array into an array of subarrays.
+    
+    Parameters:
+      n - the size of the partition.
+      
+    Returns:
+      An array
+      
+    (start code)
+    var ary = $range(10);
+    ary.partition(2); // [[0, 1], [2, 3], [4, 5], [6, 7], [8, 9]]
+    (end)
+  */
   partition: function(n) {
     if(this.length % n != 0) throw Error("The length of this array is not a multiple of " + n);
     var result = [];
@@ -380,6 +601,20 @@ Array.implement({
     }
     return result;
   },
+  
+  /*
+    Function: Array.asFn
+      Return a function that takes an index and returns
+      that item in the array. Useful when composing functions.
+      
+    Returns:
+      A function.
+      
+    (start code)
+    var ary = ['cat', 'dog', 'bird', 'zebra', 'lion'];
+    [1, 3, 2].map(ary.asFn()); // ['dog', 'zebra', 'bird']
+    (end)
+  */
   asFn: function() {
     var self = this;
     return function (idx) {
@@ -389,18 +624,81 @@ Array.implement({
 });
 
 Hash.implement({
+  /*
+    Function: Hash.asFn
+      Return a function that takes string and returns
+      the corresponding value from the hash. Useful
+      when composing functions.
+      
+    Returns:
+      A function.
+      
+    (start code)
+    var address = {
+       "city": "New York", 
+       "state": "New York", 
+       "zip": 100018, 
+       "street": "350 5th Avenue",
+       "building": "Empire State",
+       "floor": 32
+    };
+    ["building", "street", "city"].map($H(address).asFn()); // ["Empire State", "350 5th Avenue", "New York"]
+    (end)
+  */
   asFn: function() {
     var self = this;
     return function(k) {
       return self[k];
     };
+  },
+  
+  /*
+    Function: Hash.extract
+      Get a new Hash of only the specified keys.
+      
+    Parameters:
+      keys - an array of keys to extract
+      clean - if true, returns a plain object.
+      
+    Returns:
+      hash or object.
+  */
+  extract: function(keys, clean) {
+    var result = keys.map(this.asFn()).associate(keys);
+    return (clean) ? result : $H(result);
   }
 })
 
+
+/*
+  Function: $msg
+    Call a method on an object. Useful when composing functions.
+    
+  Parameters:
+    The method name to call.
+    
+  Returns:
+    A function.
+    
+  (start code)
+  var MyClass = new Class({
+    initialize: function(name) { this.name = name; },
+    sayHello: function() {
+      console.log("Hello from " + this.name)
+    }
+  });
+  var ctorfn = function(name) { return new MyClass(name); };
+  ["John", "Mary", "Bob"].map($comp(ctorfn, $msg("sayHello")));
+  (end)
+*/
 function $msg(methodName) {
   var rest = $A(arguments).rest();
   return function(obj) {
     var method = obj[methodName];
-    if(method && $type(method) == 'function') return method.apply(obj, rest);
+    if($callable(method)) {
+      return method.apply(obj, rest);
+    } else {
+      return obj.methodName;
+    }
   };
 }
