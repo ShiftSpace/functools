@@ -29,7 +29,7 @@ However you don't always have control of the argument order, that's often under 
 
 <pre>
 function abc(a, b, c) { return a + b + c; };
-var curried = abc(_, _, 3);
+var curried = abc.curry(null, _, _, 3);
 curried = curried(1);
 curried(_, 2); // 6
 </pre>
