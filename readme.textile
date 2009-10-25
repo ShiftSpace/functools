@@ -2,28 +2,49 @@ h1. FuncTools
 
 h2. Overview
 
-FuncTools is a small library of functional programming tools for MooTools. Some highlights follow.
+FuncTools is a small library of functional programming tools for MooTools.
 
 h2. $arity
 
 Sometimes you want to define a single function that dispatches on arity, for example say you want to sum a range of numbers. You could loop over the array with an accumulator, but it's much more fun to use reduce.
 
 <pre>
-var add = function(a, b) { return a + b; }
 var sum = $arity(
   function(a) { return a; },
-  function(a, b) { return a + (($type(b) == 'array') ? b.first() || 0 : b); }
+  function(a, b) { return a + b.first(); }
 );
 $reduce(sum, $range(100));
 </pre>
 
-h2. Function.comp & Function.partial
+h2. Function.partial, Function.curry, Function.comp
 
-It's very useful to able to compose functions or to curry a function.
+It's very useful to have an implementation of partial for currying arguments to a function in order, *partial* helps here:
 
 <pre>
-var newfn = Function.comp(fnA, fnB, fnC, fnD);
 var partialFn = function(a, b) { return a * b }.partial(null, 3);
+partialFn(4); // 12
+</pre>
+
+However you don't always have control of the argument order, that's often under the control of library maintainer. If for some reason you need to supply arguments out of order you should use *curry*:
+
+<pre>
+function abc(a, b, c) { return a + b + c; };
+var curried = abc(_, _, 3);
+curried = curried(1);
+curried(_, 2); // 6
+</pre>
+
+Being able to compose functions is also very useful:
+
+<pre>
+var MyClass = new Class({
+  initialize: function(name) { this.name = name; },
+  sayHello: function() {
+    console.log("Hello from " + this.name)
+  }
+});
+var ctorfn = function(name) { return new MyClass(name); };
+["John", "Mary", "Bob"].map(Function.compose(ctorfn, $msg("sayHello")));
 </pre>
 
 h2. Function.decorate
@@ -35,4 +56,35 @@ var fib = function (n) {
   return n < 2 ? n : fib(n-1) + fib(n-2);
 }.decorate(memoize);
 fib(100);
+</pre>
+
+h2. Preconditions
+
+JavaScript is a fairly loose language - sometimes you just want to add a little bit of sanity. The *pre* decorator can help here. You can specify the validating function for each argument:
+
+<pre>
+var isEven = function(n) { return n % 2 == 0; };
+var isOdd = $not(isEven);
+var add = function(a, b) { return a + b; }.decorate(pre([isEven, isOdd], true));
+add(2, 3); // 5
+add(2, 2); // throws exception
+</pre>
+
+h2. Array.asFn, Hash.asFn
+
+Often it's very nice if you can treat an Array or a Hash as a function:
+
+<pre>
+var address = {
+   "city": "New York", 
+   "state": "New York", 
+   "zip": 100018, 
+   "street": "350 5th Avenue",
+   "building": "Empire State",
+   "floor": 32
+};
+["building", "street", "city"].map($H(address).asFn()); // ["Empire State", "350 5th Avenue", "New York"]
+
+var ary = ['cat', 'dog', 'bird', 'zebra', 'lion'];
+[1, 3, 2].map(ary.asFn()); // ['dog', 'zebra', 'bird']
 </pre>
