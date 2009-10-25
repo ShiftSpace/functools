@@ -1,4 +1,6 @@
-function $identity(v) { return v; }
+function $identity(v) { return v; };
+
+function $eq(a) { return function(b) { return a == b; }};
 
 function $callable(v) { return v && $type(v) == 'function'; }
 
@@ -6,12 +8,12 @@ function $not(fn) {
   return function() {
     return !fn.apply(this, $A(arguments));
   }
-}
+};
 
 function $range(a, b) {
   var start = (b && a) || 0, end = b || a;
   return $repeat(end-start, function() { return start++; });
-}
+};
 
 function $isnull(v) { return v === null; };
 
@@ -72,6 +74,13 @@ function $acc() {
   };
 };
 
+var $_ = {};
+(function() {
+function argmerge(a, b) {
+  var result = [];
+  for(var i = 0, len = a.length; i < len; i++) result[i] = (b[i] == $_) ? a[i] : b[i];
+  return result;
+};
 Function.implement({
   decorate: function() {
     var decorators = $A(arguments), orig = resultFn = this, decorator;
@@ -91,14 +100,27 @@ Function.implement({
     }
   },
   
-  partial: function(bind, args) {
+  partial: function(bind) {
     var self = this;
-    args = $splat(args);
+    args = $A(arguments).rest();
     return function() {
       return self.apply(bind, args.concat($A(arguments)));
     };
+  },
+  
+  curry: function(bind) {
+    var self = this, arglist = $arglist(this), args = $A(arguments).rest();
+    return function() {
+      var fargs = argmerge(args, $A(arguments));
+      if(fargs.length == arglist.length && fargs.every($not($eq($_)))) {
+        return self.apply(bind, fargs);
+      } else {
+        return self.curry(bind, fargs);
+      }
+    };
   }
 });
+})();
 var $comp = Function.comp;
 
 function memoize(fn) {
