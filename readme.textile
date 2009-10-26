@@ -44,7 +44,7 @@ var MyClass = new Class({
   }
 });
 var ctorfn = function(name) { return new MyClass(name); };
-["John", "Mary", "Bob"].map(Function.compose(ctorfn, Function.msg("sayHello")));
+["John", "Mary", "Bob"].map(Function.comp(ctorfn, Function.msg("sayHello")));
 </pre>
 
 h2. Function.decorate
