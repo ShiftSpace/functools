@@ -13,19 +13,19 @@ var sum = Function.dispatch(
   function(a) { return a; },
   function(a, b) { return a + b.first(); }
 );
-sum.reduce(sum, $range(100));
+sum.reduce($range(100));
 </pre>
 
 h2. Function.partial, Function.curry, Function.comp
 
-It's very useful to have an implementation of partial for currying arguments to a function in order, *partial* helps here:
+It's very useful to have an implementation of partial for currying arguments to a function in order, *Function.partial* helps here:
 
 <pre>
 var partialFn = function(a, b) { return a * b }.partial(null, 3);
 partialFn(4); // 12
 </pre>
 
-However you don't always have control of the argument order- i.e. using someone else's library. If for some reason you need to supply arguments out of order you should use *curry*:
+However you don't always have control of the argument order- i.e. using someone else's library. If for some reason you need to supply arguments out of order you should use *Function.curry*:
 
 <pre>
 function abc(a, b, c) { return a + b + c; };
@@ -44,7 +44,7 @@ var MyClass = new Class({
   }
 });
 var ctorfn = function(name) { return new MyClass(name); };
-["John", "Mary", "Bob"].map(Function.compose(ctorfn, $msg("sayHello")));
+["John", "Mary", "Bob"].map(Function.compose(ctorfn, Function.msg("sayHello")));
 </pre>
 
 h2. Function.decorate
@@ -70,7 +70,7 @@ add(2, 3); // 5
 add(2, 2); // throws exception
 </pre>
 
-An example of postconditions:
+An example of a postcondition using *Function.post*:
 
 <pre>
 var isSmith = Function.comp(Function.acc('last'), Function.eq('Smith'));
