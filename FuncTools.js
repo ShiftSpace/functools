@@ -15,25 +15,6 @@
 function $identity(v) { return v; };
 
 /*
-  Function: $eq
-    For testing equality when composing functions. Return
-    a function which tests equality against the passed
-    in value.
-    
-  Parameters:
-    a - a value.
-    
-  Return:
-    boolean.
-    
-  (start code)
-  var fn = $eq(5);
-  [1, 2, 3, 4, 5].some($eq(5)); // true
-  (end)
-*/
-function $eq(a) { return function(b) { return a == b; }};
-
-/*
   Function: $callable
     Check whether a value is non-null and a function.
     
@@ -44,23 +25,6 @@ function $eq(a) { return function(b) { return a == b; }};
     A function which returns boolean.
 */
 function $callable(v) { return v && $type(v) == 'function'; }
-
-/*
-  Function: $not
-    Returns the complement of a function. Useful when composing
-    functions.
-    
-  Parameters:
-    fn - a function.
-    
-  Returns:
-    A function which return a boolean value.
-*/
-function $not(fn) {
-  return function() {
-    return !fn.apply(this, $A(arguments));
-  }
-};
 
 /*
   Function: $range
@@ -93,7 +57,7 @@ function $range(a, b) {
   Returns:
     boolean.
 */
-function $isnull(v) { return v === null; };
+function $isnull(v) { return v == null; };
 
 /*
   Function: $notnull
@@ -105,32 +69,7 @@ function $isnull(v) { return v === null; };
   Returns:
     boolean.
 */
-function $notnull(v) { return v !== null; };
-
-/*
-  Function: $iterate
-    Repeats a function generating an array of values
-    from calling this function n times.
-  
-  Parameters:
-    n - an integer.
-    fn - a function.
-  
-  Returns:
-    An array.
-    
-  (start code)
-  var ints = (function() { var n = 0; return function() { return n++; }})();
-  $iterate(10, ints); // [1, 2, 3, 4, 5, 6, 7, 8, 9]
-  (end)
-*/
-function $iterate(n, fn) {
-  var result = [];
-  (n).times(function() {
-    result.push(fn());
-  });
-  return result;
-};
+function $notnull(v) { return v != null; };
 
 /*
   Function: $repeat
@@ -149,94 +88,7 @@ function $iterate(n, fn) {
   (end)
 */
 function $repeat(n, v) {
-  return $iterate(n, $lambda(v));
-};
-
-/*
-  Function: $arglist
-    Get the arglist of a function. Return an array of
-    the names of function's parameters.
-  
-  Parameters:
-    fn - a function.
-    
-  Returns:
-    An array of strings.
-    
-  See Also:
-    $arity
-    
-  (start code)
-  function add(a, b, c) { return a + b + c; };
-  $arglist(add) // ["a", " b", " c"]
-  (end)
-*/
-function $arglist(fn) {
-  return fn._arglist || fn.toString().match(/function \S*\((.*?)\)/)[1].split(',');
-};
-
-/*
-  Function: $arity
-    Support for function dispatch on arity.
-    
-  Parameters:
-    This function takes any number of functions as it's parameters.
-    Each function should take a unique number of parameters.
-    
-  See Also:
-    $reduce
-    
-  (start code)
-  var sum = $arity(
-    function(a) { return a; },
-    function(a, b) { return a + b }
-  );
-  sum(5); // 5
-  sum(5, 10); // 15
-  (end)
-*/
-function $arity() {
-  var fns = $A(arguments);
-  var dispatch = [];
-  fns.each(function(fn) {
-    var arglist = $arglist(fn);
-    dispatch[arglist.length] = fn;
-  });
-  return function () {
-    var args = $A(arguments).filter($notnull);
-    return dispatch[args.length].apply(this, args);
-  }
-};
-
-/*
-  Function: $reduce
-    Uses a function to reduce a list of values to a single value.
-  
-  Parameters:
-    fn - a function.
-    ary - an array.
-  
-  Returns:
-    A value.
-    
-  (start code)
-  var ary = $repeat(10, 1);
-  var sum = $arity(
-    function(a) { return a; },
-    function(a, b) { return a + b.first(); }
-  );
-  var total = $reduce(sum, ary);
-  (end)
-*/
-function $reduce(fn, ary) {
-  ary = $A(ary);
-  var result = ary.first();
-  while(ary.rest().length != 0) {
-    var rest = ary.rest();
-    result = fn(result, rest);
-    ary = rest;
-  }
-  return result;
+  return $lambda(v).iterate(n);
 };
 
 /*
@@ -267,29 +119,6 @@ function $get(first, prop) {
 };
 
 /*
-  Function: $acc
-    Returns a function that applies $get an object. Useful
-    in function composition.
-    
-  Parameters:
-    A variable list of properties you wish to access in an object.
-    
-  Returns:
-    A value.
-    
-  (start code)
-  var objects = $repeat(5, {"foo":{"bar":{"baz":42}}});
-  objects.map($acc("foo", "bar", "baz")); // [42, 42, 42, 42, 42]
-  (end)
-*/
-function $acc() {
-  var args = $A(arguments);
-  return function(obj) {
-    return $get.apply(null, [obj].combine(args));
-  };
-};
-
-/*
   Constant: _
     To denote a value to be filled in curried function.
   
@@ -307,6 +136,80 @@ function argmerge(a, b) {
 };
 Function.implement({
   /*
+    Function: Function.not
+      Returns the complement of a function. Useful when composing
+      functions.
+
+    Parameters:
+      fn - a function.
+
+    Returns:
+      A function which return a boolean value.
+      
+    (start code)
+    function isEven(n) { return n % 2 == 0; };
+    var isOdd = isEven.not();
+    isOdd(3); // false
+    (end code)
+  */
+  not: function(fn) {
+    fn = (fn) ? fn : this;
+    return function() {
+      return !fn.apply(this, arguments);
+    }
+  },
+  
+  /*
+    Function: Function.eq
+      For testing equality when composing functions. Return
+      a function which tests equality against the passed
+      in value.
+
+    Parameters:
+      a - a value.
+
+    Return:
+      boolean.
+
+    (start code)
+    var fn = Function.eq(5);
+    [1, 2, 3, 4, 5].some(Function.eq(5)); // true
+    (end)
+  */
+  eq: function(a) { 
+    return function(b) { 
+      return a == b; 
+    }
+  },
+  
+  /*
+    Function: Function.iterate
+      Repeats a function generating an array of values
+      from calling this function n times.
+
+    Parameters:
+      n - an integer.
+      fn - a function.
+
+    Returns:
+      An array.
+
+    (start code)
+    var ints = (function() { var n = 0; return function() { return n++; }})();
+    ints.iterate(10); // [1, 2, 3, 4, 5, 6, 7, 8, 9]
+    (end)
+  */
+  iterate: function(forn, n) {
+    var result = [],
+        fandn = ($callable(this)) ? [this, forn] : [forn, n],
+        fn = fandn[0], n = fandn[1];
+    for(var i = 0; i < n; i++) {
+      result.push(fn());
+    }
+    return result;
+  },
+  
+  /*
     Function: Function.decorate
       Decorate a function. Takes a list of decorators and applies
       them to the function.
@@ -320,14 +223,14 @@ Function.implement({
     (start code)
     var fib = function (n) {
       return n < 2 ? n : fib(n-1) + fib(n-2);
-    }.decorate(memoize);
+    }.decorate(Function.memoize);
     fib(100);
     (end)
   */
   decorate: function() {
     var decorators = $A(arguments), orig = resultFn = this, decorator;
     while(decorator = decorators.pop()) resultFn = decorator(resultFn);
-    resultFn._arglist = $arglist(orig);
+    resultFn._arglist = Function.arglist(orig);
     resultFn._decorated = orig;
     return resultFn;
   },
@@ -344,14 +247,14 @@ Function.implement({
       
     (start code)
     var objects = $repeat(5, {"foo":{"bar":{"baz":42}}});
-    objects.map(Function.comp($acc("foo", "bar", "baz"), $eq(42))); // [true, true, true, true, true]
+    objects.map(Function.comp(Function.acc("foo", "bar", "baz"), Function.eq(42))); // [true, true, true, true, true]
     (end)
   */
   comp: function() {
     var fns = $A(arguments), self = this;
     return function() {
       var temp = $A(fns);
-      var args = $A(arguments), result = (self && $type(self) == 'function') ? self.apply(this, args) : null, fn;
+      var args = $A(arguments), result = ($callable(self)) ? self.apply(this, args) : null, fn;
       while(fn = temp.shift()) result = fn.apply(null, (result && [result]) || args);
       return result;
     }
@@ -396,109 +299,250 @@ Function.implement({
     (end)
   */
   curry: function(bind) {
-    var self = this, arglist = $arglist(this), args = $A(arguments).rest();
+    var self = this, arglist = Function.arglist(this), args = $A(arguments).rest();
     args = argmerge($repeat(arglist.length, _), args);
     return function() {
       var fargs = argmerge(args, $A(arguments));
-      if(fargs.length == arglist.length && fargs.every($not($eq(_)))) {
+      if(fargs.length == arglist.length && fargs.every(Function.not(Function.eq(_)))) {
         return self.apply(bind, fargs);
       } else {
         return self.curry.apply(self, [bind].extend(fargs));
       }
     };
-  }
-});
-})();
-/*
-  Function: $comp
-    Shorthand for Function.comp
-    
-  See Also:
-    <Function.comp>
-*/
-var $comp = Function.comp;
-
-/*
-  Function: memoize
-    A memoize decorator. Creates a hash of seen arguments and the
-    return values.
-    
-  Parameters:
-    fn - a function.
-    
-  Returns:
-    A function.
-    
-  (start code)
-  var fib = function (n) {
-    return n < 2 ? n : fib(n-1) + fib(n-2);
-  }.decorate(memoize);
-  fib(100);
-  (end)
-*/
-function memoize(fn) {
-  var table = {};
-  return function memoized() {
-    var args = $A(arguments);
-    var enc = JSON.encode(args);
-    if(!table[enc]) {
-      var result = fn.apply(this, args);
-      table[enc] = result;
-      return result;
-    } else {
-      return table[enc];
-    }
-  };
-}
-
-/*
-  Function: pre
-    A decorator for support pre-conditions for a function. A predicate
-    can be supplied for each argument.
-    
-  Parameters:
-    conditions - an array of predicate functions.
-    error - a boolean or function. If boolean will throw an exception
-      on a failed predicate. If a function will call it as an error
-      handler with the array containing the list of passed and failed
-      predicates.
+  },
   
-  Returns:
-    A function.
-    
-  (start code)
-  var isEven = function(n) { return n % 2 == 0; };
-  var isOdd = $not(isEven);
-  var add = function(a, b) { return a + b; }.decorate(pre([isEven, isOdd], true));
-  add(2, 3); // 5
-  add(2, 2); // throws exception
-  (code)
-*/
-function pre(conditions, error) {
-  error = error || false;
-  return function preDecorator(fn) {
-    return function() {
+  /*
+    Function: Function.memoize
+      A memoize decorator. Creates a hash of seen arguments and the
+      return values.
+
+    Parameters:
+      fn - a function.
+
+    Returns:
+      A function.
+
+    (start code)
+    var fib = function (n) {
+      return n < 2 ? n : fib(n-1) + fib(n-2);
+    }.decorate(Function.memoize);
+    fib(100);
+    (end)
+  */
+  memoize: function(fn) {
+    var table = {};
+    return function memoized() {
       var args = $A(arguments);
-      var passed = conditions.map(function(afn, i) {
-        var result = afn(args[i]);
+      var enc = JSON.encode(args);
+      if(!table[enc]) {
+        var result = fn.apply(this, args);
+        table[enc] = result;
         return result;
-      });
-      if(passed.indexOf(false) == -1) {
-        return fn.apply(this, args);
       } else {
-        if($type(error) == 'boolean' && error) {
-          var err = new Error("Arguments did not match pre conditions.");
-          err.args = args;
-          err.passed = passed;
-          err.source = fn.toString();
-          throw err;
-        } else if($type(error) == 'function') {
-          error(passed);
+        return table[enc];
+      }
+    };
+  },
+  
+  /*
+    Function: Function.pre
+      A decorator for support pre-conditions for a function. A predicate
+      can be supplied for each argument.
+
+    Parameters:
+      conditions - an array of predicate functions.
+      error - a boolean or function. If boolean will throw an exception
+        on a failed predicate. If a function will call it as an error
+        handler with the array containing the list of passed and failed
+        predicates.
+
+    Returns:
+      A function.
+
+    (start code)
+    var isEven = function(n) { return n % 2 == 0; };
+    var isOdd = isEven.not();
+    var add = function(a, b) { return a + b; }.decorate(Function.pre([isEven, isOdd], true));
+    add(2, 3); // 5
+    add(2, 2); // throws exception
+    (code)
+  */
+  pre: function(conditions, error) {
+    error = error || false;
+    return function preDecorator(fn) {
+      return function() {
+        var args = $A(arguments);
+        var passed = conditions.map(function(afn, i) {
+          var result = afn(args[i]);
+          return result;
+        });
+        if(passed.indexOf(false) == -1) {
+          return fn.apply(this, args);
+        } else {
+          if($type(error) == 'boolean' && error) {
+            var err = new Error("Arguments did not match pre conditions.");
+            err.args = args;
+            err.passed = passed;
+            err.source = fn.toString();
+            throw err;
+          } else if($type(error) == 'function') {
+            error(passed);
+          }
         }
       }
     }
+  },
+  
+  /*
+    Function: Function.arglist
+      Get the arglist of a function. Return an array of
+      the names of function's parameters.
+
+    Parameters:
+      fn - a function.
+
+    Returns:
+      An array of strings.
+
+    See Also:
+      $arity
+
+    (start code)
+    function add(a, b, c) { return a + b + c; };
+    Function.arglist(add) // ["a", " b", " c"]
+    (end)
+  */
+  arglist: function(fn) {
+    return fn._arglist || fn.toString().match(/function \S*\((.*?)\)/)[1].split(',');
+  },
+  
+  /*
+    Function: Function.dispatch
+      Support for function dispatch on arity.
+
+    Parameters:
+      This function takes any number of functions as it's parameters.
+      Each function should take a unique number of parameters.
+
+    See Also:
+      $reduce
+
+    (start code)
+    var sum = Function.dispatch(
+      function(a) { return a; },
+      function(a, b) { return a + b }
+    );
+    sum(5); // 5
+    sum(5, 10); // 15
+    (end)
+  */
+  dispatch: function() {
+    var fns = $A(arguments);
+    var dispatch = [];
+    fns.each(function(fn) {
+      var arglist = Function.arglist(fn);
+      dispatch[arglist.length] = fn;
+    });
+    return function () {
+      var args = $A(arguments).filter($notnull);
+      return dispatch[args.length].apply(this, args);
+    }
+  },
+  
+  /*
+    Function: Function.reduce
+      Reduce an array to a single value using a function defined
+      with Function.arity.
+
+    Parameters:
+      fn - a function.
+      ary - an array.
+
+    Returns:
+      A value.
+
+    (start code)
+    var ary = $range(0, 100);
+    var sum = Function.dispatch(
+      function(a) { return a; },
+      function(a, b) { return a + b.first(); }
+    );
+    sum.reduce(ary); // 4950
+    (end)
+  */
+  reduce: function(ary) {
+    var fn = this, result = ary.first();
+    while(ary.rest().length != 0) {
+      var rest = ary.rest();
+      result = fn(result, rest);
+      ary = rest;
+    }
+    return result;
+  },
+  
+  /*
+    Function: Function.acc
+      Returns a function that applies $get on it's argument. Useful
+      in function composition.
+
+    Parameters:
+      A variable list of properties you wish to access in an object.
+
+    Returns:
+      A value.
+
+    (start code)
+    var objects = $repeat(5, {"foo":{"bar":{"baz":42}}});
+    objects.map(Function.acc("foo", "bar", "baz")); // [42, 42, 42, 42, 42]
+    (end)
+  */
+  acc: function() {
+    var args = $A(arguments);
+    return function(obj) {
+      return $get.apply(null, [obj].combine(args));
+    };
+  },
+  
+  /*
+    Function: Function.msg
+      Returns function which will call a function on it's
+      argument. Useful when composing functions.
+
+    Parameters:
+      The method name to call.
+
+    Returns:
+      A function.
+
+    (start code)
+    var MyClass = new Class({
+      initialize: function(name) { this.name = name; },
+      sayHello: function() {
+         console.log("Hello from " + this.name)
+      }
+    });
+    var ctorfn = function(name) { return new MyClass(name); };
+    ["John", "Mary", "Bob"].map(Function.comp(ctorfn, Function.msg("sayHello")));
+    (end)
+  */
+  msg: function(methodName) {
+    var rest = $A(arguments).rest();
+    return function(obj) {
+      var method = obj[methodName];
+      if($callable(method)) {
+        return method.apply(obj, rest);
+      } else {
+        return obj.methodName;
+      }
+    };
   }
-}
+});
+})();
+
+// Optimization
+Function.implement({
+  arglist: Function.arglist.decorate(Function.memoize)
+});
 
 // We need a backreference to wrapper to support decorator usage from within classes - David
 Class.extend({
@@ -516,6 +560,7 @@ Class.extend({
     return wrapper;
   }
 });
+
 
 Array.implement({
   /*
@@ -667,37 +712,4 @@ Hash.implement({
     var result = keys.map(this.asFn()).associate(keys);
     return (clean) ? result : $H(result);
   }
-})
-
-/*
-  Function: $msg
-    Call a method on an object. Useful when composing functions.
-    
-  Parameters:
-    The method name to call.
-    
-  Returns:
-    A function.
-    
-  (start code)
-  var MyClass = new Class({
-    initialize: function(name) { this.name = name; },
-    sayHello: function() {
-      console.log("Hello from " + this.name)
-    }
-  });
-  var ctorfn = function(name) { return new MyClass(name); };
-  ["John", "Mary", "Bob"].map($comp(ctorfn, $msg("sayHello")));
-  (end)
-*/
-function $msg(methodName) {
-  var rest = $A(arguments).rest();
-  return function(obj) {
-    var method = obj[methodName];
-    if($callable(method)) {
-      return method.apply(obj, rest);
-    } else {
-      return obj.methodName;
-    }
-  };
-}
+});
