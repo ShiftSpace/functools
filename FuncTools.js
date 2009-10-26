@@ -346,7 +346,7 @@ Function.implement({
   
   /*
     Function: Function.pre
-      A decorator for support pre-conditions for a function. A predicate
+      A decorator for supporting preconditions for a function. A predicate
       can be supplied for each argument.
 
     Parameters:
@@ -371,18 +371,66 @@ Function.implement({
     error = error || false;
     return function preDecorator(fn) {
       return function() {
-        var args = $A(arguments);
+        var args = arguments;
         var passed = conditions.map(function(afn, i) {
           var result = afn(args[i]);
           return result;
         });
         if(passed.indexOf(false) == -1) {
-          return fn.apply(this, args);
+          return fn.apply(this, arguments);
         } else {
           if($type(error) == 'boolean' && error) {
-            var err = new Error("Arguments did not match pre conditions.");
-            err.args = args;
+            var err = new Error("Arguments did not match preconditions.");
+            err.args = arguments;
             err.passed = passed;
+            err.source = fn.toString();
+            throw err;
+          } else if($type(error) == 'function') {
+            error(passed);
+          }
+        }
+      }
+    }
+  },
+  
+  /*
+    Function: Function.post
+      A decorator for supporting postconditions for a function. A predicate
+      can be supplied to test the result of the function.
+
+    Parameters:
+      condition - a predicate function.
+      error - a boolean or function. If boolean will throw an exception
+        on a failed predicate. If a function will call it as an error
+        handler with the array containing the list of passed and failed
+        predicates.
+
+    Returns:
+      A function.
+
+    (start code)
+    var isSmith = Function.comp(Function.acc('last'), Function.eq('Smith'));
+
+    var fn = function(first, last) {
+      return {first:first, last:last}; 
+    }.decorate(Function.post(isSmith, true));
+
+    fn("Bob", "Smith");
+    fn("Bob", "Howard"); // throws exception
+    (code)
+  */
+  post: function(condition, error) {
+    error = error || false;
+    return function postDecorator(fn) {
+      return function() {
+        var result = fn.apply(this, arguments);
+        if(condition(result)) {
+          return result;
+        } else {
+          if($type(error) == 'boolean' && error) {
+            var err = new Error("Result did not match postcondition.");
+            err.args = arguments;
+            err.result = result;
             err.source = fn.toString();
             throw err;
           } else if($type(error) == 'function') {

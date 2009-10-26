@@ -58,7 +58,7 @@ var fib = function (n) {
 fib(100);
 </pre>
 
-h2. Preconditions
+h2. Preconditions & Postconditions
 
 JavaScript is a fairly loose language - sometimes you just want to add a little bit of sanity. The *Function.pre* decorator can help here. You can specify the validating function for each argument:
 
@@ -68,6 +68,19 @@ var isOdd = $not(isEven);
 var add = function(a, b) { return a + b; }.decorate(Function.pre([isEven, isOdd], true));
 add(2, 3); // 5
 add(2, 2); // throws exception
+</pre>
+
+An example of postconditions:
+
+<pre>
+var isSmith = Function.comp(Function.acc('last'), Function.eq('Smith'));
+
+var fn = function(first, last) {
+  return {first:first, last:last}; 
+}.decorate(Function.post(isSmith, true));
+
+fn("Bob", "Smith");
+fn("Bob", "Howard"); // throws exception
 </pre>
 
 h2. Array.asFn, Hash.asFn
