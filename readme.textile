@@ -4,16 +4,16 @@ h2. Overview
 
 FuncTools is a small library of functional programming tools for MooTools.
 
-h2. $arity
+h2. Function.dispatch
 
-Sometimes you want to define a single function that dispatches on arity, for example say you want to sum a range of numbers. You could loop over the array with an accumulator, but it's much more fun to use reduce.
+Sometimes you want to define a single function that dispatches on arity, for example say you want to sum a range of numbers. You could loop over the array with an accumulator, but it's much more fun to use *Function.reduce*.
 
 <pre>
-var sum = $arity(
+var sum = Function.dispatch(
   function(a) { return a; },
   function(a, b) { return a + b.first(); }
 );
-$reduce(sum, $range(100));
+sum.reduce(sum, $range(100));
 </pre>
 
 h2. Function.partial, Function.curry, Function.comp
@@ -25,7 +25,7 @@ var partialFn = function(a, b) { return a * b }.partial(null, 3);
 partialFn(4); // 12
 </pre>
 
-However you don't always have control of the argument order, that's often under the control of library maintainer. If for some reason you need to supply arguments out of order you should use *curry*:
+However you don't always have control of the argument order- i.e. using someone else's library. If for some reason you need to supply arguments out of order you should use *curry*:
 
 <pre>
 function abc(a, b, c) { return a + b + c; };
@@ -49,25 +49,38 @@ var ctorfn = function(name) { return new MyClass(name); };
 
 h2. Function.decorate
 
-Function decoration is also a very powerful technique. The "Promises":http://github.com/ShiftSpace/promises/tree/master uses this to great effect. We can memoize results for example. You would not want to run the following calculation without memoization:
+Function decoration is also a very powerful technique. The "Promises":http://github.com/ShiftSpace/promises/tree/master library uses this to great effect. We can memoize results for example. You would not want to run the following calculation without memoization:
 
 <pre>
 var fib = function (n) {
   return n < 2 ? n : fib(n-1) + fib(n-2);
-}.decorate(memoize);
+}.decorate(Function.memoize);
 fib(100);
 </pre>
 
-h2. Preconditions
+h2. Preconditions & Postconditions
 
-JavaScript is a fairly loose language - sometimes you just want to add a little bit of sanity. The *pre* decorator can help here. You can specify the validating function for each argument:
+JavaScript is a fairly loose language - sometimes you just want to add a little bit of sanity. The *Function.pre* decorator can help here. You can specify the validating function for each argument:
 
 <pre>
 var isEven = function(n) { return n % 2 == 0; };
 var isOdd = $not(isEven);
-var add = function(a, b) { return a + b; }.decorate(pre([isEven, isOdd], true));
+var add = function(a, b) { return a + b; }.decorate(Function.pre([isEven, isOdd], true));
 add(2, 3); // 5
 add(2, 2); // throws exception
+</pre>
+
+An example of postconditions:
+
+<pre>
+var isSmith = Function.comp(Function.acc('last'), Function.eq('Smith'));
+
+var fn = function(first, last) {
+  return {first:first, last:last}; 
+}.decorate(Function.post(isSmith, true));
+
+fn("Bob", "Smith");
+fn("Bob", "Howard"); // throws exception
 </pre>
 
 h2. Array.asFn, Hash.asFn
@@ -88,3 +101,39 @@ var address = {
 var ary = ['cat', 'dog', 'bird', 'zebra', 'lion'];
 [1, 3, 2].map(ary.asFn()); // ['dog', 'zebra', 'bird']
 </pre>
+
+h2. List of all functions
+
+** $identity
+** $callable
+** $range
+** $isnull
+** $notnull
+** $repeat
+** $get
+
+** Function.not
+** Function.eq
+** Function.iterate
+** Function.decorate
+** Function.comp
+** Function.partial
+** Function.curry
+** Function.memoize
+** Function.pre
+** Function.arglist
+** Function.dispatch
+** Function.reduce
+** Function.acc
+** Function.msg
+
+** Array.first
+** Array.rest
+** Array.drop
+** Array.tail
+** Array.head
+** Array.partition
+** Array.asFn
+
+** Hash.asFn
+** Hash.extract
