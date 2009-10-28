@@ -365,8 +365,8 @@ Function.implement({
     fib(100);
     (end)
   */
-  memoize: function(fn) {
-    var table = {};
+  memoize: function(fn, table) {
+    table = table || {};
     return function memoized() {
       var args = $A(arguments);
       var enc = JSON.encode(args);
