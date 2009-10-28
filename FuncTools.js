@@ -141,6 +141,37 @@ function argmerge(a, b) {
 };
 Function.implement({
   /*
+    Function: Function.exec
+      Takes a list of arguments a creates a function
+      which a takes a function and call it with those
+      arguments. If called with a function as the first
+      argument, executes the function immediately.
+      
+    Parameters:
+      The first parameter is bind or a function. The rest 
+      are arguments that will passed to the called function
+      if the first argument is not a function.
+      
+    Returns:
+      A function.
+      
+    (start code)
+    var obj = {name:"Joe"};
+    function sayHello(to) {
+      console.log("Hello " + to + " from " + this.name + "!");
+    };
+    [sayHello, sayHello, sayHello].each(Function.exec(obj, "Bob"));
+    (end)
+  */
+  exec: function(bindorfn){
+    if($callable(bindorfn)) return bindorfn();
+    var args = $A(arguments).rest();
+    return function(fn) {
+      return fn.apply(bindorfn, args);
+    };
+  },
+  
+  /*
     Function: Function.not
       Returns the complement of a function. Useful when composing
       functions.
