@@ -28,6 +28,7 @@ partialFn(4); // 12
 However you don't always have control of the argument order- i.e. using someone else's library. If for some reason you need to supply arguments out of order you should use *Function.curry*:
 
 <pre>
+var _ = Function._;
 function abc(a, b, c) { return a + b + c; };
 var curried = abc.curry(null, _, _, 3);
 curried = curried(1);
