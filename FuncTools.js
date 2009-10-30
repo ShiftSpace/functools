@@ -116,6 +116,7 @@ function $repeat(n, v) {
   (end)
 */
 function $get(first, prop) {
+  if(first == null) return null;
   var args = $A(arguments), rest = args.rest(2), next;
   if(rest.length == 0) return first[prop];
   if(['object', 'array'].contains($type(first))) next = first[prop];
