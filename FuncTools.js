@@ -120,18 +120,19 @@ function $get(first, prop) {
 };
 
 /*
-  Constant: _
+  Constant: Function._
     To denote a value to be filled in curried function.
   
   See Also:
-    <curry>
+    <Function.curry>
 */
-var _ = {};
+Function._ = {};
+
 (function() {
 function argmerge(a, b) {
   var result = [];
   for(var i = 0, len = Math.max(a.length, b.length); i < len; i++) {
-    result[i] = (b[i] == _) ? a[i] || _ : (b[i] !== undefined && b[i]) || a[i];
+    result[i] = (b[i] == Function._) ? a[i] || Function._ : (b[i] !== undefined && b[i]) || a[i];
   }
   return result;
 };
@@ -139,7 +140,7 @@ Function.implement({
   /*
     Function: Function.exec
       Takes a list of arguments a creates a function
-      which a takes a function and call it with those
+      which a takes a function and calls it with those
       arguments. If called with a function as the first
       argument, executes the function immediately.
       
@@ -324,6 +325,7 @@ Function.implement({
       supplied.
       
     (start code)
+    var _ = Function._;
     function abc(a, b, c) { return a + b + c; };
     var curried = abc.curry(null, _, _, 3);
     curried = curried(1);
@@ -332,10 +334,10 @@ Function.implement({
   */
   curry: function(bind) {
     var self = this, arglist = Function.arglist(this), args = $A(arguments).rest();
-    args = argmerge($repeat(arglist.length, _), args);
+    args = argmerge($repeat(arglist.length, Function._), args);
     return function() {
       var fargs = argmerge(args, $A(arguments));
-      if(fargs.length == arglist.length && fargs.every(Function.not(Function.eq(_)))) {
+      if(fargs.length == arglist.length && fargs.every(Function.not(Function.eq(Function._)))) {
         return self.apply(bind, fargs);
       } else {
         return self.curry.apply(self, [bind].extend(fargs));
