@@ -1,8 +1,3 @@
-// ==Builder==
-// @required
-// @package           FuncTools
-// ==/Builder==
-
 /*
   Function: $identity
     A function that simply returns the value given to it.
