@@ -339,10 +339,12 @@ Function.implement({
   */
   curry: function(bind) {
     var self = this, arglist = Function.arglist(this), args = $A(arguments).rest();
+    if(args.length > arglist.length) args = args.drop(args.length - arglist.length);
     args = argmerge($repeat(arglist.length, Function._), args);
     return function() {
       var fargs = argmerge(args, $A(arguments));
-      if(fargs.length == arglist.length && fargs.every(Function.not(Function.eq(Function._)))) {
+      if(fargs.length > arglist.length) fargs = fargs.drop(fargs.length - arglist.length);
+      if(fargs.length >= arglist.length && fargs.every(Function.not(Function.eq(Function._)))) {
         return self.apply(bind, fargs);
       } else {
         return self.curry.apply(self, [bind].extend(fargs));
