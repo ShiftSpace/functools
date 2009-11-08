@@ -335,14 +335,22 @@ Function.implement({
     var curried = abc.curry(null, _, _, 3);
     curried = curried(1);
     curried(_, 2); // 6
+    
+    var _ = Function._;
+    function append(strA, strB) {
+      return strA + strB;
+    }
+    var fn = append.curry(Function._, '!');
+    ['Zap', 'Pow', 'Boom', 'Blast', 'Kerzow'].each(fn);
     (end)
   */
   curry: function(bind) {
     var self = this, arglist = Function.arglist(this), args = $A(arguments).rest();
     if(args.length > arglist.length) args = args.drop(args.length - arglist.length);
     args = argmerge($repeat(arglist.length, Function._), args);
-    return function() {
+    return function curryFn() {
       var fargs = argmerge(args, $A(arguments));
+      if(curryFn.called) console.log(curryFn.caller.toString());
       if(fargs.length > arglist.length) fargs = fargs.drop(fargs.length - arglist.length);
       if(fargs.length >= arglist.length && fargs.every(Function.not(Function.eq(Function._)))) {
         return self.apply(bind, fargs);
@@ -406,7 +414,7 @@ Function.implement({
     var add = function(a, b) { return a + b; }.decorate(Function.pre([isEven, isOdd], true));
     add(2, 3); // 5
     add(2, 2); // throws exception
-    (code)
+    (end)
   */
   pre: function(conditions, error) {
     error = error || false;
@@ -458,7 +466,7 @@ Function.implement({
 
     fn("Bob", "Smith");
     fn("Bob", "Howard"); // throws exception
-    (code)
+    (end)
   */
   post: function(condition, error) {
     error = error || false;
@@ -478,8 +486,34 @@ Function.implement({
             error(passed);
           }
         }
-      }
+      };
+    };
+  },
+  
+  /*
+    Function: Function.limit
+      Limit the number of arguments passed to a function. Important when using Function.curry
+      in conjunction with Array and Hash each, map, filter.
+      
+    Parameters:
+      n - the number of arguments to accept.
+      
+    (start code)
+    function add(a, b) {
+        console.log(arguments);
+        return a + b;
     }
+    var fn = add.decorate(Function.limit(2));
+    fn(3, 4, 5);
+    (end)
+  */
+  limit: function(n){
+    return function limitDecorator(fn) {
+      return function() {
+        var args = $A(arguments).head(n);
+        return fn.apply(this, args);
+      };
+    };
   },
   
   /*
