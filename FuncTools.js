@@ -340,8 +340,8 @@ Function.implement({
     function append(strA, strB) {
       return strA + strB;
     }
-    var fn = append.curry(Function._, '!');
-    ['Zap', 'Pow', 'Boom', 'Blast', 'Kerzow'].each(fn.decorate(Function.limit(1)));
+    var fn = append.curry(null, Function._, '!');
+    ['Zap', 'Pow', 'Boom'].map(fn);
     (end)
   */
   curry: function(bind) {
@@ -350,7 +350,6 @@ Function.implement({
     args = argmerge($repeat(arglist.length, Function._), args);
     return function curryFn() {
       var fargs = argmerge($A(arguments), args);
-      if(curryFn.called) console.log(curryFn.caller.toString());
       if(fargs.length > arglist.length) fargs = fargs.drop(fargs.length - arglist.length);
       if(fargs.length >= arglist.length && fargs.every(Function.not(Function.eq(Function._)))) {
         return self.apply(bind, fargs);
@@ -486,32 +485,6 @@ Function.implement({
             error(passed);
           }
         }
-      };
-    };
-  },
-  
-  /*
-    Function: Function.limit
-      Limit the number of arguments passed to a function. Important when using Function.curry
-      in conjunction with Array and Hash each, map, filter.
-      
-    Parameters:
-      n - the number of arguments to accept.
-      
-    (start code)
-    function add(a, b) {
-        console.log(arguments);
-        return a + b;
-    }
-    var fn = add.decorate(Function.limit(2));
-    fn(3, 4, 5);
-    (end)
-  */
-  limit: function(n){
-    return function limitDecorator(fn) {
-      return function() {
-        var args = $A(arguments).head(n);
-        return fn.apply(this, args);
       };
     };
   },
