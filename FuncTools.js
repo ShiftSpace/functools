@@ -327,7 +327,7 @@ Function.implement({
   /*
     Function: Function.curry
       A much more powerful version of currying. Any argument may
-      supplied.
+      supplied. Once an argument has been supplied it cannot be changed.
       
     (start code)
     var _ = Function._;
@@ -341,7 +341,7 @@ Function.implement({
       return strA + strB;
     }
     var fn = append.curry(Function._, '!');
-    ['Zap', 'Pow', 'Boom', 'Blast', 'Kerzow'].each(fn);
+    ['Zap', 'Pow', 'Boom', 'Blast', 'Kerzow'].each(fn.decorate(Function.limit(1)));
     (end)
   */
   curry: function(bind) {
@@ -349,7 +349,7 @@ Function.implement({
     if(args.length > arglist.length) args = args.drop(args.length - arglist.length);
     args = argmerge($repeat(arglist.length, Function._), args);
     return function curryFn() {
-      var fargs = argmerge(args, $A(arguments));
+      var fargs = argmerge($A(arguments), args);
       if(curryFn.called) console.log(curryFn.caller.toString());
       if(fargs.length > arglist.length) fargs = fargs.drop(fargs.length - arglist.length);
       if(fargs.length >= arglist.length && fargs.every(Function.not(Function.eq(Function._)))) {
