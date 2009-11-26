@@ -194,7 +194,7 @@ Function.implement({
     fn = (fn) ? fn : this;
     return function() {
       return !fn.apply(this, arguments);
-    }
+    };
   },
   
   /*
@@ -217,7 +217,7 @@ Function.implement({
   eq: function(a) { 
     return function(b) { 
       return a == b; 
-    }
+    };
   },
   
   /*
@@ -295,7 +295,7 @@ Function.implement({
       var args = $A(arguments), result = ($callable(self)) ? self.apply(this, args) : null, fn;
       while(fn = temp.shift()) result = fn.apply(null, (result && [result]) || args);
       return result;
-    }
+    };
   },
   
   /*
@@ -438,7 +438,7 @@ Function.implement({
           }
         }
       }
-    }
+    };
   },
   
   /*
@@ -542,7 +542,7 @@ Function.implement({
     return function () {
       var args = $A(arguments).filter($notnull);
       return dispatch[args.length].apply(this, args);
-    }
+    };
   },
   
   /*
@@ -714,7 +714,7 @@ Array.implement({
     Returns:
       An array.
   */
-  head: function(n) { return this.slice(0, (n || this.length)) },
+  head: function(n) { return this.slice(0, (n || this.length)); },
   
   /*
     Function: Array.partition
@@ -760,7 +760,24 @@ Array.implement({
     var self = this;
     return function (idx) {
       return self[idx];
-    }
+    };
+  },
+
+  /*
+    Function: hash
+      Takes an array (whose contents should be [[k0, v0], [k1, v1], ..., [kn, vn]])
+      and returns a Hash object.
+
+    Returns:
+      A Hash object.
+  */
+  hash: function()
+  {
+    var result = $H();
+    this.each(function(kv) {
+      result[kv[0]] = kv[1];
+    });
+    return result;
   }
 });
 
