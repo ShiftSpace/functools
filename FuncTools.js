@@ -132,6 +132,7 @@ function $get(first, prop) {
     <Function.curry>
 */
 Function._ = {};
+Function.nomemo = {};
 
 (function() {
 function argmerge(a, b) {
@@ -384,8 +385,11 @@ Function.implement({
       var enc = JSON.encode(args);
       if(!table[enc]) {
         var result = fn.apply(this, args);
-        table[enc] = result;
-        return result;
+        if(result != Function.nomemo)
+        {
+          table[enc] = result;
+          return result;
+        }
       } else {
         return table[enc];
       }
