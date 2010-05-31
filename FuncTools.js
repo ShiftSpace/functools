@@ -125,7 +125,36 @@ function $get(first, prop) {
 };
 
 /*
+  Function: $treeMap
+    Work in progress.
+*/
+function $treeMap(obj, mapFn, isChild) {
+  var result;
+  switch($type(obj)) {
+    case "array":
+      result = obj.map(function(x) {
+        return $treeMap(x, mapFn, isChild);
+      });
+      break;
+    case "object":
+      if(isChild && isChild(obj)) {
+        result = obj;
+      } else {
+        result = $H(obj).map(function(v, k) {
+          return $treeMap(v, mapFn, isChild);
+        }).getClean();
+      }
+      break;
+    default:
+      result = mapFn(obj);
+      break;
+  };
+  return result;
+}
+
+/*
   Function: $treeFilter
+    Work in progress.
 */
 function $treeFilter(obj, filter, isChild, accum) {
   accum = accum || [];
