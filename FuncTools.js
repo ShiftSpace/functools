@@ -125,6 +125,35 @@ function $get(first, prop) {
 };
 
 /*
+  Function: $treeFilter
+*/
+function $treeFilter(obj, filter, isChild, accum) {
+  accum = accum || [];
+  switch($type(obj)) {
+    case "object":
+      if(isChild && isChild(obj) && filter(obj)) {
+        accum.push(obj);
+        break;
+      } else {
+        obj = $H(obj);
+      }
+    case "array":
+      if(obj.length == 0) break;
+      obj.each(function(x) {
+        accum = $treeFilter(x, filter, isChild, accum);
+      });
+      break;
+    case false:
+      break;
+    default:
+      if(filter(obj)) {
+        accum.push(obj);
+      }
+  };
+  return accum;
+}
+
+/*
   Constant: Function._
     To denote a value to be filled in curried function.
   
