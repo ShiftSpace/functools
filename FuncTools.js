@@ -141,8 +141,8 @@ function $treeMap(obj, mapFn, isChild) {
         result = $H(obj).map(function(v, k) {
           return $treeMap(v, mapFn, isChild);
         }).getClean();
+        break;
       }
-      break;
     default:
       result = mapFn(obj);
       break;
