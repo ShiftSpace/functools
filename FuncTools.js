@@ -137,7 +137,7 @@ function $treeMap(obj, mapFn, isChild) {
       });
       break;
     case "object":
-      if(!isChild || !isChild(obj)) {
+      if(!isChild || (isChild && !isChild(obj))) {
         result = $H(obj).map(function(v, k) {
           return $treeMap(v, mapFn, isChild);
         }).getClean();
