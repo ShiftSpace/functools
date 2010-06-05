@@ -127,8 +127,10 @@ function $get(first, prop) {
 /*
   Function: $treeMap
     Work in progress.
+    Generic map operation over Objects and Arrays. Returns
+    the type of the original object.
 */
-function $treeMap(obj, mapFn, isChild) {
+function $treeMap(obj, mapFn, isChild, key) {
   var result;
   switch($type(obj)) {
     case "array":
@@ -139,12 +141,12 @@ function $treeMap(obj, mapFn, isChild) {
     case "object":
       if(!isChild || (isChild && !isChild(obj))) {
         result = $H(obj).map(function(v, k) {
-          return $treeMap(v, mapFn, isChild);
+          return $treeMap(v, mapFn, isChild, k);
         }).getClean();
       }
       break;
     default:
-      result = mapFn(obj);
+      result = mapFn(obj, key);
       break;
   };
   return result;
@@ -153,12 +155,15 @@ function $treeMap(obj, mapFn, isChild) {
 /*
   Function: $treeFilter
     Work in progress.
+    Takes a JavaScript object or array and filters it
+    depth first as a sequence. This function always returns
+    an array.
 */
-function $treeFilter(obj, filter, isChild, accum) {
+function $treeFilter(obj, filter, isChild, accum, key) {
   accum = accum || [];
   switch($type(obj)) {
     case "object":
-      if(isChild && isChild(obj) && filter(obj)) {
+      if(isChild && isChild(obj) && filter(obj, key)) {
         accum.push(obj);
         break;
       } else {
@@ -166,14 +171,14 @@ function $treeFilter(obj, filter, isChild, accum) {
       }
     case "array":
       if(obj.length == 0) break;
-      obj.each(function(x) {
-        accum = $treeFilter(x, filter, isChild, accum);
+      obj.each(function(x, k) {
+        accum = $treeFilter(x, filter, isChild, accum, k);
       });
       break;
     case false:
       break;
     default:
-      if(filter(obj)) {
+      if(filter(obj, key)) {
         accum.push(obj);
       }
   };
